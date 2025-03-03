@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Providers;
+namespace App\Services;
 
-use Illuminate\Support\ServiceProvider;
 use App\Models\Developer;
 use Carbon\Carbon;
 
-class CakeDayProvider extends ServiceProvider
+class CakeDayService
 {
     public function calculateCakeDays()
     {
@@ -26,15 +25,12 @@ class CakeDayProvider extends ServiceProvider
         return $this->applyCakeRules($cakeDays);
     }
 
-
     private function isHoliday(Carbon $date)
     {
         $holidays = ['12-25', '12-26', '01-01'];
         return in_array($date->format('m-d'), $holidays);
     }
-    /**
-     * Bootstrap services.
-     */
+
     private function nextWorkingDay(Carbon $date)
     {
         while ($date->isWeekend() || $this->isHoliday($date)) {
@@ -42,6 +38,7 @@ class CakeDayProvider extends ServiceProvider
         }
         return $date;
     }
+
     private function applyCakeRules($cakeDays)
     {
         $finalCakeSchedule = [];
@@ -55,7 +52,4 @@ class CakeDayProvider extends ServiceProvider
         }
         return $finalCakeSchedule;
     }
-
 }
-
-

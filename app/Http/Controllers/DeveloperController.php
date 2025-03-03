@@ -2,17 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\CakeDayService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 use App\Models\Developer;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
-use App\Providers\CakeDayProvider;
 
 
 class DeveloperController extends Controller
 {
+
+
 
     public function showUploadForm(): View
     {
@@ -46,11 +48,18 @@ class DeveloperController extends Controller
         return redirect('/uploadForm')->with('success', 'File uploaded successfully!');
     }
 
+    protected $cakeDayService;
 
-
-    public function getCakeDays(CakeDayProvider $service)
+    public function __construct(CakeDayService $cakeDayService)
     {
-        return response()->json($service->calculateCakeDays());
+        $this->cakeDayService = $cakeDayService;
     }
+
+    public function getCakeDays()
+    {
+        return response()->json($this->cakeDayService->calculateCakeDays());
+    }
+
+
 }
 
