@@ -2,6 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+use App\Http\Controllers\DeveloperController;
+use App\Http\Controllers\Controller;
+Route::post('/upload-birthdays', [DeveloperController::class, 'uploadBirthdays']);
