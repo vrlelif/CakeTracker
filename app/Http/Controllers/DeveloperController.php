@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Developer;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
+use App\Providers\CakeDayProvider;
+
 
 class DeveloperController extends Controller
 {
@@ -22,6 +24,12 @@ class DeveloperController extends Controller
         }
 
         return response()->json(['message' => 'File processed successfully'], 200);
+    }
+
+
+    public function getCakeDays(CakeDayProvider $service)
+    {
+        return response()->json($service->calculateCakeDays());
     }
 }
 
