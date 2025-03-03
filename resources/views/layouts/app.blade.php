@@ -13,7 +13,7 @@
     <div class="container mx-auto mt-8">
         <nav class="bg-white p-4 shadow-md rounded">
             <ul class="flex space-x-4">
-                <li><a href="{{ url('/upload-birthdays') }}" class="text-blue-600 hover:underline">Upload Birthdays</a>
+                <li><a href="{{ url('/') }}" class="text-blue-600 hover:underline">Upload Birthdays</a>
                 </li>
                 <li><a href="{{ url('/cake-days') }}" class="text-blue-600 hover:underline">View Cake Days</a></li>
             </ul>
