@@ -13,9 +13,6 @@ use Illuminate\Support\Facades\Storage;
 
 class DeveloperController extends Controller
 {
-
-
-
     public function showUploadForm(): View
     {
         return view('uploadForm');
@@ -45,7 +42,7 @@ class DeveloperController extends Controller
             Developer::updateOrCreate(['name' => $name], ['date_of_birth' => $dob]);
         }
 
-        return redirect('/uploadForm')->with('success', 'File uploaded successfully!');
+        return redirect('/cakes')->with('success', 'File uploaded successfully!');
     }
 
     protected $cakeDayService;
@@ -57,7 +54,14 @@ class DeveloperController extends Controller
 
     public function getCakeDays()
     {
-        return response()->json($this->cakeDayService->calculateCakeDays());
+        $cakeDays = $this->cakeDayService->calculateCakeDays();
+        return response()->json($cakeDays, 200);
+
+    }
+
+    public function showCakes(): View
+    {
+        return view('cake-days');
     }
 
 
