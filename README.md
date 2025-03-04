@@ -14,7 +14,7 @@ CakeTracker is a service that helps manage and schedule cake days for employees 
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/yourusername/CakeTracker.git
+    git clone https://github.com/vrlelif/CakeTracker.git
     ```
 
 2. Navigate to the project directory:
