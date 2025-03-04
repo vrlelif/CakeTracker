@@ -1,66 +1,101 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<?php
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+namespace App\Services;
 
-## About Laravel
+use App\Models\Developer;
+use Carbon\Carbon;
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+class CakeDayService
+{
+    public function calculateCakeDays()
+    {
+        $developers = Developer::all();
+        $cakeDays = [];
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+        foreach ($developers as $developer) {
+            $birthday = Carbon::parse($developer->date_of_birth)->year(Carbon::now()->year);
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+            // ✅ Step 1: Employees get their birthday off
+            $dayOff = $this->nextWorkingDay($birthday);
 
-## Learning Laravel
+            // ✅ Step 2: Cake Day is the first working day after their day off
+            $cakeDay = $this->nextWorkingDay($dayOff->copy()->addDay());
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+            // ✅ Step 3: Store Cake Days (but don't handle cake-free logic yet)
+            $cakeDays[$cakeDay->toDateString()][] = $developer->name;
+        }
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+        return $this->applyCakeRules($cakeDays);
+    }
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+    private function isHoliday(Carbon $date)
+    {
+        $holidays = ['12-25', '12-26', '01-01'];
+        return in_array($date->format('m-d'), $holidays);
+    }
 
-## Laravel Sponsors
+    private function nextWorkingDay(Carbon $date)
+    {
+        while ($date->isWeekend() || $this->isHoliday($date)) {
+            $date->addDay();
+        }
+        return $date;
+    }
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+    private function applyCakeRules(array $cakeDays): array
+    {
+        ksort($cakeDays);
+        $finalCakeSchedule = [];
+        $previousCakeDay = null;
+        $cakeFreeDays = [];
 
-### Premium Partners
+        foreach ($cakeDays as $date => $people) {
+            // ✅ If the date is a Cake-Free Day, move the cake to the next working day
+            while (in_array($date, $cakeFreeDays)) {
+                $date = $this->nextWorkingDay(Carbon::parse($date)->addDay())->toDateString();
+            }
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+            $isLargeCake = count($people) > 1;
 
-## Contributing
+            // ✅ Merge consecutive Cake Days
+            if ($previousCakeDay && isset($finalCakeSchedule[$previousCakeDay])
+                && Carbon::parse($previousCakeDay)->addDay()->toDateString() === $date) {
+                
+                $finalCakeSchedule[$date]['people'] = $finalCakeSchedule[$previousCakeDay]['people'] . ', ' . implode(', ', $people);
+                $finalCakeSchedule[$date]['small_cakes'] = 0; // No small cakes when merged
+                $finalCakeSchedule[$date]['large_cakes'] = 1; // Ensure it's a large cake
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+                // ✅ Remove the merged day
+                unset($finalCakeSchedule[$previousCakeDay]);
+            } else {
+                // ✅ Normal Cake Day processing
+                $finalCakeSchedule[$date] = [
+                    'date' => $date,
+                    'small_cakes' => $isLargeCake ? 0 : 1,
+                    'large_cakes' => $isLargeCake ? 1 : 0,
+                    'people' => implode(', ', $people)
+                ];
+            }
 
-## Code of Conduct
+            // ✅ Mark the next working day as Cake-Free
+            $cakeFreeDays[] = $this->nextWorkingDay(Carbon::parse($date)->addDay())->toDateString();
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+            // ✅ Update previous Cake Day
+            $previousCakeDay = $date;
+        }
 
-## Security Vulnerabilities
+        // ✅ Step 2: Mark Cake-Free Days in the schedule
+        foreach ($cakeFreeDays as $date) {
+            if (!isset($finalCakeSchedule[$date])) {
+                $finalCakeSchedule[$date] = [
+                    'date' => $date,
+                    'small_cakes' => 0,
+                    'large_cakes' => 0,
+                    'people' => 'Cake-Free Day'
+                ];
+            }
+        }
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+        return $finalCakeSchedule;
+    }
+}
