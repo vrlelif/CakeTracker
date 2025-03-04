@@ -1,101 +1,51 @@
-<?php
+# CakeTracker
 
-namespace App\Services;
+CakeTracker is a service that helps manage and schedule cake days for employees based on their birthdays. The service ensures that employees get their birthday off, and assigns a cake day on the first working day after their day off. It also ensures no back-to-back cake days and handles merging of consecutive cake days.
 
-use App\Models\Developer;
-use Carbon\Carbon;
+## Features
 
-class CakeDayService
-{
-    public function calculateCakeDays()
-    {
-        $developers = Developer::all();
-        $cakeDays = [];
+- Employees get their birthday off.
+- Cake Day is the first working day after their day off.
+- Ensures no back-to-back cake days.
+- Merges consecutive cake days into the second day.
+- Assigns one large cake if two or more people have the same cake day.
 
-        foreach ($developers as $developer) {
-            $birthday = Carbon::parse($developer->date_of_birth)->year(Carbon::now()->year);
+## Installation
 
-            // ✅ Step 1: Employees get their birthday off
-            $dayOff = $this->nextWorkingDay($birthday);
+1. Clone the repository:
+    ```sh
+    git clone https://github.com/yourusername/CakeTracker.git
+    ```
 
-            // ✅ Step 2: Cake Day is the first working day after their day off
-            $cakeDay = $this->nextWorkingDay($dayOff->copy()->addDay());
+2. Navigate to the project directory:
+    ```sh
+    cd CakeTracker
+    ```
 
-            // ✅ Step 3: Store Cake Days (but don't handle cake-free logic yet)
-            $cakeDays[$cakeDay->toDateString()][] = $developer->name;
-        }
+3. Install the dependencies:
+    ```sh
+    composer install
+    ```
 
-        return $this->applyCakeRules($cakeDays);
-    }
+4. Set up the environment variables:
+    ```sh
+    cp .env.example .env
+    php artisan key:generate
+    ```
 
-    private function isHoliday(Carbon $date)
-    {
-        $holidays = ['12-25', '12-26', '01-01'];
-        return in_array($date->format('m-d'), $holidays);
-    }
+5. Run the migrations:
+    ```sh
+    php artisan migrate
+    ```
 
-    private function nextWorkingDay(Carbon $date)
-    {
-        while ($date->isWeekend() || $this->isHoliday($date)) {
-            $date->addDay();
-        }
-        return $date;
-    }
+## Usage
 
-    private function applyCakeRules(array $cakeDays): array
-    {
-        ksort($cakeDays);
-        $finalCakeSchedule = [];
-        $previousCakeDay = null;
-        $cakeFreeDays = [];
+To calculate and get the cake days, you can use the `CakeDayService` class. Here is an example of how to use it:
 
-        foreach ($cakeDays as $date => $people) {
-            // ✅ If the date is a Cake-Free Day, move the cake to the next working day
-            while (in_array($date, $cakeFreeDays)) {
-                $date = $this->nextWorkingDay(Carbon::parse($date)->addDay())->toDateString();
-            }
+```php
+use App\Services\CakeDayService;
 
-            $isLargeCake = count($people) > 1;
+$cakeDayService = new CakeDayService();
+$cakeDays = $cakeDayService->calculateCakeDays();
 
-            // ✅ Merge consecutive Cake Days
-            if ($previousCakeDay && isset($finalCakeSchedule[$previousCakeDay])
-                && Carbon::parse($previousCakeDay)->addDay()->toDateString() === $date) {
-                
-                $finalCakeSchedule[$date]['people'] = $finalCakeSchedule[$previousCakeDay]['people'] . ', ' . implode(', ', $people);
-                $finalCakeSchedule[$date]['small_cakes'] = 0; // No small cakes when merged
-                $finalCakeSchedule[$date]['large_cakes'] = 1; // Ensure it's a large cake
-
-                // ✅ Remove the merged day
-                unset($finalCakeSchedule[$previousCakeDay]);
-            } else {
-                // ✅ Normal Cake Day processing
-                $finalCakeSchedule[$date] = [
-                    'date' => $date,
-                    'small_cakes' => $isLargeCake ? 0 : 1,
-                    'large_cakes' => $isLargeCake ? 1 : 0,
-                    'people' => implode(', ', $people)
-                ];
-            }
-
-            // ✅ Mark the next working day as Cake-Free
-            $cakeFreeDays[] = $this->nextWorkingDay(Carbon::parse($date)->addDay())->toDateString();
-
-            // ✅ Update previous Cake Day
-            $previousCakeDay = $date;
-        }
-
-        // ✅ Step 2: Mark Cake-Free Days in the schedule
-        foreach ($cakeFreeDays as $date) {
-            if (!isset($finalCakeSchedule[$date])) {
-                $finalCakeSchedule[$date] = [
-                    'date' => $date,
-                    'small_cakes' => 0,
-                    'large_cakes' => 0,
-                    'people' => 'Cake-Free Day'
-                ];
-            }
-        }
-
-        return $finalCakeSchedule;
-    }
-}
+print_r($cakeDays);
