@@ -3,7 +3,7 @@
 @section('content')
     <div class="container mx-auto p-4">
         <h1 class="text-2xl font-bold mb-4">Cake Days</h1>
-        <table class="table-auto w-full border">
+        <table class="text-center table-auto w-full border bg-white p-4 shadow-md rounded">
             <thead>
                 <tr>
                     <th>Date</th>
@@ -23,11 +23,11 @@
                 const table = document.getElementById('cake-table');
                 Object.values(data).forEach(day => {
                     table.innerHTML += `<tr>
-                                     <td>${day.date}</td>
-                                     <td>${day.small_cakes}</td>
-                                     <td>${day.large_cakes}</td>
-                                     <td>${day.people}</td>
-                                    </tr>`;
+                                                         <td>${day.date}</td>
+                                                         <td>${day.small_cakes}</td>
+                                                         <td>${day.large_cakes}</td>
+                                                         <td>${day.people}</td>
+                                                        </tr>`;
                 });
             });
     </script>
